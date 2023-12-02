@@ -36,8 +36,8 @@ export default class MushroomHelper {
 
     findClosestCell = (newMushroomDetails) => {
         //loop through the grid for the closest position
-        const potentialMushroomX = newMushroomDetails.vector.x;
-        const potentialMushroomY = newMushroomDetails.vector.y;
+        const potentialMushroomX = newMushroomDetails.x;
+        const potentialMushroomY = newMushroomDetails.y;
 
         let smallest = this.grid.getPositionForKey(1);
         let smallestDistance = CANVASSIZE;

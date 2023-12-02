@@ -20,3 +20,11 @@ export const SEGMENT_TYPES = Object.freeze({
     PARENT: "parent",
     CHILD: "child"
 })
+
+//    // .01, .02, .04, .06, .08
+export const CENTIPEDE_SPEEDS = new Map();
+CENTIPEDE_SPEEDS.set(1, .09);
+CENTIPEDE_SPEEDS.set(1.5, .13);
+CENTIPEDE_SPEEDS.set(2, .16);
+CENTIPEDE_SPEEDS.set(2.5, .19);
+CENTIPEDE_SPEEDS.set(3, .22);

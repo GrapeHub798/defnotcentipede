@@ -1,5 +1,5 @@
 import Helpers from "./helpers.js";
-import {CENTIPEDE_TYPES, DIRECTIONS, SEGMENT_TYPES} from "./types.js";
+import {CENTIPEDE_SPEEDS, CENTIPEDE_TYPES, DIRECTIONS, SEGMENT_TYPES} from "./types.js";
 import {
     BASE_HORIZONTAL_MARGIN,
     BASE_VERTICAL_MARGIN,
@@ -123,25 +123,30 @@ class Segment {
         this.diam = diam;
         this.x = x;
         this.y = y;
+        this.verticalMove = CENTIPEDE_VERTICAL_MOVE;
+        this.verticalDirection = DIRECTIONS.DOWN;
     }
     draw = () => {
         fill("#34eb37");
         ellipse(this.x, this.y, this.diam, this.diam);
     }
+
+    collidedWithCircularObject = (obj) => {
+        return collideCircleCircle(this.x, this.y, this.diam, obj.x, obj.y, obj.r);
+    }
+
+    moveVertically = () => {
+        this.y += this.verticalDirection === DIRECTIONS.DOWN ? Math.abs(this.verticalMove) : -Math.abs(this.verticalMove);
+    }
 }
 
 class Parent extends Segment {
-    constructor(diam, x, y, vector, customDirection = '') {
+    constructor(diam, x, y, customDirection = '') {
         super(diam, x, y);
         this.type = SEGMENT_TYPES.PARENT;
-        this.vector = vector;
         this.horizontalDirection = customDirection || DIRECTIONS.RIGHT;
-        this.verticalDirection = DIRECTIONS.DOWN;
         this.allowMoveVertically = true;
-        //this.hitBottom = false;
-        this.verticalMove = CENTIPEDE_VERTICAL_MOVE;
-        this.x = this.vector.x;
-        this.y = this.vector.y;
+        this.hitBottom = false;
         this.bounceCompensation = 2;
     }
 
@@ -181,14 +186,30 @@ class Parent extends Segment {
         }, 100)
     }
 
-    moveVertically = () => {
-        this.y += this.verticalDirection === DIRECTIONS.DOWN ? Math.abs(this.verticalMove) : -Math.abs(this.verticalMove);
-    }
-
     collidedWithMushroom = (mushroom) => {
         const hit = collideRectCircle(mushroom.x, mushroom.y, mushroom.w, mushroom.h, this.x, this.y, this.diam + -Math.abs(this.bounceCompensation));
         if (hit){
             this.boundaryCollisionHandler(true);
+        }
+    }
+
+    collidedWithBottom = () => {
+        const bottomMargin = CANVASSIZE - BASE_VERTICAL_MARGIN;
+
+        if (this.y >= bottomMargin){
+            this.hitBottom = true;
+            this.verticalDirection = DIRECTIONS.UP;
+        }
+    }
+
+    collidedWithTop = () => {
+        const topMarginAfterHitBottom = (CANVASSIZE / 4) * 3;
+        if (!this.hitBottom){
+            return;
+        }
+
+        if (this.y <= topMarginAfterHitBottom){
+            this.verticalDirection = DIRECTIONS.DOWN;
         }
     }
 }
@@ -201,9 +222,11 @@ class Child extends Segment {
     }
 
     //adjust the x and y coords
+    // .01, .02, .04, .06, .08
     adjustSelf = (previousSegment, speed) => {
-        this.x = lerp(this.x, previousSegment.x, .12);
-        this.y = lerp(this.y, previousSegment.y, .12);
+        const lerpSpeed = CENTIPEDE_SPEEDS.get(speed);
+        this.x = lerp(this.x, previousSegment.x, lerpSpeed);
+        this.y = lerp(this.y, previousSegment.y, lerpSpeed);
     }
 }
 
@@ -230,20 +253,9 @@ export default class Centipede {
         }
 
         this.segments.push(new Parent(this.diam, this.startX, this.startY, createVector(this.startX, this.startY), customDirection));
-        for (let x = 0; x < this.length; x++) {
+        for (let x = 1; x < this.length; x++) {
             this.segments.push(new Child(this.diam, this.startX, this.startY));
         }
-
-        /*
-
-        let offsetX = this.startX;
-        for (let x = 0; x < this.length; x++){
-            this.segments.push(
-                new Segment(this.diam, createVector(offsetX, this.startY), x, customDirection)
-            )
-            offsetX -= this.diam;
-        }
-        */
     }
 
     run = () => {
@@ -262,8 +274,8 @@ export default class Centipede {
         //move first piece
         const firstSegment = this.segments[0];
         firstSegment.collidedWithEdge();
-        //parentSegment.collidedWithTop();
-        //parentSegment.collidedWithBottom();
+        firstSegment.collidedWithTop();
+        firstSegment.collidedWithBottom();
         firstSegment.moveHorizontally(newSpeed.x);
 
 
@@ -274,19 +286,6 @@ export default class Centipede {
                 const parentSegment = this.segments[i-1]
                 currentSegment.adjustSelf(parentSegment, newSpeed.x);
             }
-            /*
-            const staticCurrentSegment = currentSegment.getSegment();
-
-            const dx = staticCurrentSegment.x - staticParentData.x;
-            const dy = staticCurrentSegment.y - staticParentData.y;
-            const angle1 = atan2(dy, dx);
-            const x = staticCurrentSegment.x - cos(angle1) * this.diam;
-            const y = staticCurrentSegment.y - sin(angle1) * this.diam;
-            //figure out distance from parent and move closer to parent
-
-            currentSegment.vector.x = x;
-            currentSegment.vector.y = y;
-            */
             /*
             currentSegment.collidedWithEdge();
             currentSegment.collidedWithTop();
@@ -302,7 +301,6 @@ export default class Centipede {
     }
 
     handleBulletCollision = (bullets) => {
-        const collidedBullets = [];
         if (!bullets || bullets.length === 0 || !this.segments || this.segments.length === 0){
             return {
                 newCentipedes: []
@@ -376,14 +374,5 @@ export default class Centipede {
             const currentMushroom = mushrooms[x];
             parentSegment.collidedWithMushroom(currentMushroom);
         }
-
-        /*
-        for(let i= 0; i < this.segments.length; i++){
-            for (let x = 0; x < mushrooms.length; x++){
-                const currentMushroom = mushrooms[x];
-                this.segments[i].collidedWithMushroom(currentMushroom);
-            }
-        }
-        */
     }
 }

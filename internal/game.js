@@ -13,7 +13,7 @@ const maxTopBoundary = 0;
 
 let grid;
 
-const mushroomsToCreate = 20;
+let mushroomsToCreate = 20;
 
 let mushroomHandler;
 let bulletHandler;
@@ -26,6 +26,9 @@ let shipLives = 3;
 
 let isPaused = false;
 let score = 0;
+
+let centipedeSpeed = 1;
+let level = 1;
 function setup() {
     createCanvas(CANVASSIZE, CANVASSIZE);
     noCursor();
@@ -36,7 +39,7 @@ function setup() {
     mushroomHandler = new MushroomHelper(mushroomsToCreate, grid);
     bulletHandler = new BulletHelper(maxTopBoundary);
 
-    centipedes.push(new Centipede(CENTIPEDE_START_X, 10, 1.5, 2));
+    centipedes.push(new Centipede(CENTIPEDE_START_X, 10, centipedeSpeed, 9));
 
     ship = new Ship(CANVASSIZE, baseBottomMargin, mushroomHandler.mushrooms);
 
@@ -58,15 +61,16 @@ function setup() {
             centipedes.splice(deletedCentipedeIndex, 1);
             //get the pieces and make new centipede
             centipedeCollisionData?.newCentipedesToCreate.forEach(newCentipede => {
-                const newX = newCentipede.start.vector.x
-                const newY = newCentipede.start.vector.y
+                const newX = newCentipede.start.x
+                const newY = newCentipede.start.y
                 const newDirection = newCentipede.start.horizontalDirection === DIRECTIONS.RIGHT ? DIRECTIONS.LEFT : DIRECTIONS.RIGHT;
-                centipedes.push(new Centipede(newX, newY, 1, newCentipede.length, newDirection))
+                centipedes.push(new Centipede(newX, newY, centipedeSpeed, newCentipede.length, newDirection))
             });
             return;
         }
 
         //advance the level
+        advanceLevel();
     })
 
     document.addEventListener("deleteCentipede", function (e) {
@@ -147,7 +151,7 @@ function draw() {
             const singleCentipede = centipedes[x];
             singleCentipede.run();
             singleCentipede.handleMushroomCollision(mushroomHandler.mushrooms);
-            //singleCentipede.handleBulletCollision(bulletHandler.getBullets());
+            singleCentipede.handleBulletCollision(bulletHandler.getBullets());
         }
     }
 
@@ -187,6 +191,15 @@ const pauseGame = () => {
     isPaused = !isPaused;
 }
 
+const advanceLevel = () => {
+    level++
+    mushroomsToCreate++;
+    //increase centipede speed on certain levels
+    const newDirection = Math.random() < 0.5 ? DIRECTIONS.LEFT : DIRECTIONS.RIGHT;
+    centipedes.push(new Centipede(CENTIPEDE_START_X, 10, centipedeSpeed, 9, newDirection));
+
+    mushroomHandler = new MushroomHelper(mushroomsToCreate, grid);
+}
 const start = () => {
 
 }
