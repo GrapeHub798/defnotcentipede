@@ -1,19 +1,27 @@
 import Ship from "./ship.js";
 import MushroomHelper from "./mushroomHelper.js";
 import BulletHelper from "./bulletHelper.js";
-import Centipede from "./centipede.js";
 import {CANVASSIZE, CENTIPEDE_START_X} from "./config.js";
 import Grid from "./grid.js";
-import {DIRECTIONS} from "./types.js";
+import {
+    CENTIPEDE_COLORS,
+    CENTIPEDE_LEVEL_COUNT,
+    CENTIPEDE_SPEEDS,
+    DIRECTIONS, MUSHROOM_COLORS,
+    MUSHROOM_LEVEL_COUNT,
+    SPIDER_LEVEL_COUNT
+} from "./types.js";
 import Spider from "./spider.js"
+import CentipedeV2 from "./centipedeV2.js";
 
 //base constants
 const baseBottomMargin = 30;
 const maxTopBoundary = 0;
 
 let grid;
+let level = 1;
 
-let mushroomsToCreate = 20;
+let mushroomsToCreate = MUSHROOM_LEVEL_COUNT.get(level);
 
 let mushroomHandler;
 let bulletHandler;
@@ -27,8 +35,10 @@ let shipLives = 3;
 let isPaused = false;
 let score = 0;
 
-let centipedeSpeed = 1;
-let level = 1;
+let centipedeSpeed = 3//CENTIPEDE_SPEEDS.get(level);
+let centipedeColor = CENTIPEDE_COLORS.get(level);
+
+let mushroomColor = MUSHROOM_COLORS.get(level);
 function setup() {
     createCanvas(CANVASSIZE, CANVASSIZE);
     noCursor();
@@ -36,46 +46,52 @@ function setup() {
     //create the grid
     grid = new Grid();
 
-    mushroomHandler = new MushroomHelper(mushroomsToCreate, grid);
+    mushroomHandler = new MushroomHelper(mushroomsToCreate, grid, mushroomColor);
     bulletHandler = new BulletHelper(maxTopBoundary);
 
-    centipedes.push(new Centipede(CENTIPEDE_START_X, 10, centipedeSpeed, 9));
+    centipedes.push(new CentipedeV2(CENTIPEDE_START_X, 10, centipedeColor, centipedeSpeed , 10 ));
 
     ship = new Ship(CANVASSIZE, baseBottomMargin, mushroomHandler.mushrooms);
 
     //add spider delay using interval
     startSpiderCreation();
-    //spiders.push(new Spider(1))
+    spiders.push(new Spider(1))
 
     //const createMushroomEvent = new Event("createMushroom", {mushroom: });
 
     document.addEventListener("createMushroom", function (e) {
-        mushroomHandler.createSingleMushroom(e.detail)
+        mushroomHandler.createSingleMushroom(e.detail, mushroomColor)
     });
 
     /* CENTIPEDE EVENT LISTENERS */
-    document.addEventListener("bulletHitCentipede", function (e) {
+    document.addEventListener("bulletHitCentipede", async function (e) {
         const centipedeCollisionData = e.detail;
+        const deletedCentipedeIndex = centipedes.findIndex(singleCentipede => singleCentipede.id == centipedeCollisionData.singlePieceDestroyedId)
+        centipedes.splice(deletedCentipedeIndex, 1);
         if (centipedeCollisionData?.newCentipedesToCreate?.length > 0) {
-            const deletedCentipedeIndex = centipedes.findIndex(singleCentipede => singleCentipede.id == centipedeCollisionData.singlePieceDestroyedId)
-            centipedes.splice(deletedCentipedeIndex, 1);
             //get the pieces and make new centipede
             centipedeCollisionData?.newCentipedesToCreate.forEach(newCentipede => {
                 const newX = newCentipede.start.x
                 const newY = newCentipede.start.y
                 const newDirection = newCentipede.start.horizontalDirection === DIRECTIONS.RIGHT ? DIRECTIONS.LEFT : DIRECTIONS.RIGHT;
-                centipedes.push(new Centipede(newX, newY, centipedeSpeed, newCentipede.length, newDirection))
+                centipedes.push(
+                    new CentipedeV2(newX, newY, centipedeColor, centipedeSpeed, newCentipede.length, newDirection)
+                )
             });
-            return;
         }
 
-        //advance the level
-        advanceLevel();
+        //advance the level if we have no centipedes
+        if (centipedes.length === 0) {
+            await advanceLevel();
+        }
     })
 
-    document.addEventListener("deleteCentipede", function (e) {
+    document.addEventListener("deleteCentipede", async function (e) {
         const deletedCentipedeIndex = centipedes.findIndex(singleCentipede => singleCentipede.id == e.detail)
         centipedes.splice(deletedCentipedeIndex, 1);
+        if (centipedes.length === 0) {
+            await advanceLevel();
+        }
     })
 
     /* SPIDER EVENT LISTENERS */
@@ -149,8 +165,7 @@ function draw() {
     if (centipedes && centipedes.length > 0) {
         for (let x = 0; x < centipedes.length; x++) {
             const singleCentipede = centipedes[x];
-            singleCentipede.run();
-            singleCentipede.handleMushroomCollision(mushroomHandler.mushrooms);
+            singleCentipede.run(mushroomHandler.mushrooms);
             singleCentipede.handleBulletCollision(bulletHandler.getBullets());
         }
     }
@@ -191,14 +206,28 @@ const pauseGame = () => {
     isPaused = !isPaused;
 }
 
-const advanceLevel = () => {
-    level++
-    mushroomsToCreate++;
-    //increase centipede speed on certain levels
-    const newDirection = Math.random() < 0.5 ? DIRECTIONS.LEFT : DIRECTIONS.RIGHT;
-    centipedes.push(new Centipede(CENTIPEDE_START_X, 10, centipedeSpeed, 9, newDirection));
+const delay = (delayInMs) => new Promise(resolve => setTimeout(resolve, delayInMs));
 
-    mushroomHandler = new MushroomHelper(mushroomsToCreate, grid);
+const advanceLevel = async () => {
+    level++
+    //get the mushrooms we want to create
+    mushroomsToCreate = MUSHROOM_LEVEL_COUNT.get(level);
+    mushroomColor = MUSHROOM_COLORS.get(level);
+    mushroomHandler = new MushroomHelper(mushroomsToCreate, grid, mushroomColor);
+
+    //get the number of centipedes
+    const centipedeCount = CENTIPEDE_LEVEL_COUNT.get(level);
+
+    //get centipede colors
+    centipedeColor = CENTIPEDE_COLORS.get(level);
+
+    //get the centipede speed
+    centipedeSpeed = CENTIPEDE_SPEEDS.get(level);
+    for (let x = 0; x < centipedeCount; x++) {
+        const newDirection = Math.random() < 0.5 ? DIRECTIONS.LEFT : DIRECTIONS.RIGHT;
+        await delay(3000);
+        centipedes.push(new CentipedeV2(CENTIPEDE_START_X, 10, centipedeColor, centipedeSpeed , 10, newDirection));
+    }
 }
 const start = () => {
 
@@ -235,16 +264,19 @@ const manageShip = () => {
 
 //random spider creation
 const startSpiderCreation = () => {
-
     let spiderStartTimer = Math.floor(Math.random() * 1000);
     setTimeout(createSingleSpider, spiderStartTimer);
 
     function createSingleSpider() {
-        spiderStartTimer = Math.floor(Math.random() * 30000);
+        spiderStartTimer = Math.floor(Math.random() * 10000);
 
-        document.dispatchEvent(new CustomEvent("createSpider", {
-            detail: ""
-        }));
+        //get max spiders
+        const maxSpiders = SPIDER_LEVEL_COUNT.get(level);
+        if (spiders.length < maxSpiders) {
+            document.dispatchEvent(new CustomEvent("createSpider", {
+                detail: ""
+            }));
+        }
 
         setTimeout(createSingleSpider, spiderStartTimer);
     }

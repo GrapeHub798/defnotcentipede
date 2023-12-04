@@ -1,7 +1,7 @@
 import {OBJECT_TYPES} from "./types.js";
 
 export default class Mushroom {
-    constructor(id, key, x, y) {
+    constructor(id, key, x, y, color) {
         this.type = OBJECT_TYPES.MUSHROOM;
         this.id = id;
         this.key = key;
@@ -9,7 +9,7 @@ export default class Mushroom {
         this.y = y;
         this.w = 10;
         this.h = 10;
-        this.col = "#cf0000";
+        this.col = color;
         this.hp = 4;
     }
 

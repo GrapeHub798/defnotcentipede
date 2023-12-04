@@ -7,3 +7,4 @@ export const BASE_TOP_MARGIN = 20;
 export const BASE_BOTTOM_MARGIN = 320;
 export const BASE_TOP_SPIDER_MARGIN = 320;
 export const CENTIPEDE_VERTICAL_MOVE = 10;
+export const CENTIPEDE_DIAMETER = 10;

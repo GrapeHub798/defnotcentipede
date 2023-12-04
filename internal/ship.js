@@ -1,4 +1,4 @@
-import {BASE_HORIZONTAL_MARGIN} from "./config.js";
+import {BASE_HORIZONTAL_MARGIN, CANVASSIZE} from "./config.js";
 
 export default class Ship {
 
@@ -138,8 +138,12 @@ export default class Ship {
         return mouseY;
     }
 
-    didCollideWithCircularObject = (obj) => {
+    didCollideWithSpider = (obj) => {
         return collideRectCircle(this.x, this.y, this.r, this.r, obj.x, obj.y, obj.r);
+    }
+
+    didCollideWithCentipedeSegment = (obj) => {
+        return collideRectCircle(this.x, this.y, this.r, this.r, obj.x, obj.y, obj.diameter);
     }
 
     handleSpiderCollision = (spiders) => {
@@ -150,7 +154,7 @@ export default class Ship {
         for (let x = 0; x < spiders.length; x++){
             const currentSpider = spiders[x];
 
-            if (this.didCollideWithCircularObject(currentSpider.getSpider())){
+            if (this.didCollideWithSpider(currentSpider.getSpider())){
                 //delete spider
                 document.dispatchEvent(new CustomEvent("deleteSpider", {
                     detail: currentSpider
@@ -173,10 +177,15 @@ export default class Ship {
         for (let x = 0; x < centipedes.length; x++){
             const currentCentipede = centipedes[x];
             //loop through the centipede pieces
-            for (let i = 0; i < currentCentipede.pieces; i++){
-                const currentSegment = currentCentipede.pieces[i];
+            for (let i = 0; i < currentCentipede.segments.length; i++){
+                const currentSegment = currentCentipede.segments[i];
 
-                if (this.didCollideWithCircularObject(currentSegment.getSpider())){
+                //only care when below a certain level
+                if (currentSegment.y < (CANVASSIZE / 4) * 3){
+                    continue;
+                }
+
+                if (this.didCollideWithCentipedeSegment(currentSegment)){
                     //delete ship
                     this.show = false;
                     document.dispatchEvent(new CustomEvent("destroyShip", {
@@ -189,7 +198,6 @@ export default class Ship {
                     }));
                     break;
                 }
-
             }
         }
     }

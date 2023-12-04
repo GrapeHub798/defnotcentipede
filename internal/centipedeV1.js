@@ -231,7 +231,7 @@ class Child extends Segment {
 }
 
 
-export default class Centipede {
+export default class CentipedeV1 {
     constructor(startX, startY, speed, length, customDirection = '') {
         this.id =  Helpers.uuidv4();
         this.head = '';

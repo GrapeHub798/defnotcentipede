@@ -4,16 +4,12 @@ import Helpers from "./helpers.js";
 
 export default class MushroomHelper {
 
-    constructor(mushroomToCreate, grid) {
+    constructor(mushroomToCreate, grid, color) {
         this.grid = grid;
-        this.mushrooms = this.createMushrooms(mushroomToCreate);
+        this.mushrooms = this.createMushrooms(mushroomToCreate, color);
     }
 
-    static getCollidableMushrooms = (mushrooms, topLimit, bottomLimit) => {
-
-    }
-
-    createSingleMushroom = (newMushroomDetails) => {
+    createSingleMushroom = (newMushroomDetails, color) => {
         const closestCell = this.findClosestCell(newMushroomDetails);
 
         //make sure a mushroom is not there already
@@ -22,7 +18,7 @@ export default class MushroomHelper {
         const maxId = this.getMaxMushroomId();
         //create a mushroom there
         if (!existingMushroom){
-            this.mushrooms.push(new Mushroom(maxId+1, closestCell.gridKey, closestCell.x, closestCell.y));
+            this.mushrooms.push(new Mushroom(maxId+1, closestCell.gridKey, closestCell.x, closestCell.y, color));
         }
     }
 
@@ -56,7 +52,7 @@ export default class MushroomHelper {
         return smallest;
     }
 
-    createMushrooms = (mushroomCount) => {
+    createMushrooms = (mushroomCount, color) => {
         const mushrooms = [];
         const mushroomKeys = [];
 
@@ -65,7 +61,7 @@ export default class MushroomHelper {
             mushroomKeys.push(newMushroomKey);
             const mushroomPositions = this.grid.getPositionForKey(newMushroomKey);
             //why am I saving the index of the for loop???
-            mushrooms.push(new Mushroom(x, mushroomPositions.gridKey, mushroomPositions.x, mushroomPositions.y));
+            mushrooms.push(new Mushroom(x, mushroomPositions.gridKey, mushroomPositions.x, mushroomPositions.y, color));
         }
         return mushrooms;
     }
