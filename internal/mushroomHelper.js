@@ -3,7 +3,6 @@ import {CANVASSIZE} from "./config.js";
 import Helpers from "./helpers.js";
 
 export default class MushroomHelper {
-
     constructor(mushroomToCreate, grid, color) {
         this.grid = grid;
         this.mushrooms = this.createMushrooms(mushroomToCreate, color);

@@ -35,7 +35,7 @@ let shipLives = 3;
 let isPaused = false;
 let score = 0;
 
-let centipedeSpeed = 3//CENTIPEDE_SPEEDS.get(level);
+let centipedeSpeed = CENTIPEDE_SPEEDS.get(level);
 let centipedeColor = CENTIPEDE_COLORS.get(level);
 
 let mushroomColor = MUSHROOM_COLORS.get(level);
@@ -57,8 +57,6 @@ function setup() {
     startSpiderCreation();
     spiders.push(new Spider(1))
 
-    //const createMushroomEvent = new Event("createMushroom", {mushroom: });
-
     document.addEventListener("createMushroom", function (e) {
         mushroomHandler.createSingleMushroom(e.detail, mushroomColor)
     });
@@ -66,6 +64,7 @@ function setup() {
     /* CENTIPEDE EVENT LISTENERS */
     document.addEventListener("bulletHitCentipede", async function (e) {
         const centipedeCollisionData = e.detail;
+        score += 100;
         const deletedCentipedeIndex = centipedes.findIndex(singleCentipede => singleCentipede.id == centipedeCollisionData.singlePieceDestroyedId)
         centipedes.splice(deletedCentipedeIndex, 1);
         if (centipedeCollisionData?.newCentipedesToCreate?.length > 0) {
